@@ -36,8 +36,7 @@ router.post("/signup", async (req, res) => {
     res.status(500).json({ message: `${error}` });
   }
 });
- //TODO: finish the login workflow and role-based authentication
-
+ //TODO: finish the login workflow and role-based  authentication
 router.post("/login", async (req, res) => {
   const {username, password} = req.body;
 
