@@ -67,6 +67,9 @@ router.post("/login", async (req, res) => {
           message: "Here is the token",
           authToken,
           userId: foundUser._id,
+          masterAdmin: foundUser.masterAdmin,
+          isAdmin: foundUser.isAdmin,
+          resetPassword: foundUser.resetPassword
         });
     }
   } catch (error) {
@@ -74,5 +77,9 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: `Invalid Credentials` , error: `${error}`});
   }
 });
+
+router.patch("/resetpassword", async (req, res) => {
+  
+})
 
 module.exports = router;
