@@ -16,6 +16,18 @@ router.get("/", async (req, res) => {
   }
 });
 
+// router.get("/:userId" , async (req, res)=> {
+//   const {userId} =req.params;
+
+//   try {
+//     const foundUser = await User.findById(userId)
+//     console.log(foundUser)
+//     res.status(200).json(foundUser)
+//   } catch (error) {
+//     res.status(500).json({message: `${error}`})
+//   }
+// })
+
 router.post("/signup", async (req, res) => {
   try {
     const salt = bcrypt.genSaltSync(12);
@@ -36,16 +48,15 @@ router.post("/signup", async (req, res) => {
     res.status(500).json({ message: `${error}` });
   }
 });
- //TODO: finish the login workflow and role-based  authentication
+//TODO: finish the login workflow and role-based  authentication
 router.post("/login", async (req, res) => {
-  const {username, password} = req.body;
+  const { username, password } = req.body;
 
-  
   try {
     const foundUser = await User.findOne({ username: username });
     if (!foundUser) {
       res.status(404).json({ message: "User not found!" });
-      return
+      return;
     }
 
     const isPasswordValid = bcrypt.compare(password, foundUser.password);
@@ -61,25 +72,43 @@ router.post("/login", async (req, res) => {
         expiresIn: "10d",
       });
 
-      res
-        .status(200)
-        .json({
-          message: "Here is the token",
-          authToken,
-          userId: foundUser._id,
-          masterAdmin: foundUser.masterAdmin,
-          isAdmin: foundUser.isAdmin,
-          resetPassword: foundUser.resetPassword
-        });
+      res.status(200).json({
+        message: "Here is the token",
+        authToken,
+        userId: foundUser._id,
+        masterAdmin: foundUser.masterAdmin,
+        isAdmin: foundUser.isAdmin,
+        resetPassword: foundUser.resetPassword,
+      });
     }
   } catch (error) {
-    console.log(error)
-    res.status(500).json({ message: `Invalid Credentials` , error: `${error}`});
+    console.log(error);
+    res.status(500).json({ message: `Invalid Credentials`, error: `${error}` });
   }
 });
 
-router.patch("/resetpassword", async (req, res) => {
+router.patch("/resetpassword/:userId", async (req, res) => {
+  const { newPassword } = req.body;
   
-})
+  const { userId } = req.params;
+
+  try {
+    
+    const salt = bcrypt.genSaltSync(12)
+
+    const newHashedPassword = bcrypt.hashSync(newPassword, salt)
+
+    const updatedUser = {      
+      password: newHashedPassword,
+      resetPassword: false
+    }
+
+    const updatedUserPassword = await User.findByIdAndUpdate(userId, updatedUser)
+
+    res.status(200).json({message: "Password Upated Sucessfuly!"})
+  } catch (error) {
+    res.status(500).json({message: "No user found"})
+  }
+});
 
 module.exports = router;
