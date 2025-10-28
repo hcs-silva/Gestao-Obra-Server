@@ -36,8 +36,7 @@ router.post("/signup", async (req, res) => {
     const hashedUser = {
       username: req.body.username,
       password: hashedPassword,
-      masterAdmin: req.body.masterAdmin,
-      isAdmin: req.body.isAdmin,
+      role: req.body.role,
       resetPassword: req.body.resetPassword,
     };
 
@@ -76,8 +75,7 @@ router.post("/login", async (req, res) => {
         message: "Here is the token",
         authToken,
         userId: foundUser._id,
-        masterAdmin: foundUser.masterAdmin,
-        isAdmin: foundUser.isAdmin,
+        role: foundUser.role,
         resetPassword: foundUser.resetPassword,
       });
     }
@@ -89,25 +87,27 @@ router.post("/login", async (req, res) => {
 
 router.patch("/resetpassword/:userId", async (req, res) => {
   const { newPassword } = req.body;
-  
+
   const { userId } = req.params;
 
   try {
-    
-    const salt = bcrypt.genSaltSync(12)
+    const salt = bcrypt.genSaltSync(12);
 
-    const newHashedPassword = bcrypt.hashSync(newPassword, salt)
+    const newHashedPassword = bcrypt.hashSync(newPassword, salt);
 
-    const updatedUser = {      
+    const updatedUser = {
       password: newHashedPassword,
-      resetPassword: false
-    }
+      resetPassword: false,
+    };
 
-    const updatedUserPassword = await User.findByIdAndUpdate(userId, updatedUser)
+    const updatedUserPassword = await User.findByIdAndUpdate(
+      userId,
+      updatedUser
+    );
 
-    res.status(200).json({message: "Password Upated Sucessfuly!"})
+    res.status(200).json({ message: "Password Upated Sucessfuly!" });
   } catch (error) {
-    res.status(500).json({message: "No user found"})
+    res.status(500).json({ message: "No user found" });
   }
 });
 
