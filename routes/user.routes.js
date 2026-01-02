@@ -2,6 +2,7 @@ const router = require("express").Router();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User.model");
+const isAuthenticated = require("../middlewares/authMiddleware");
 
 router.get("/", async (req, res) => {
   try {
@@ -42,7 +43,7 @@ router.post("/signup", async (req, res) => {
 
     const createdUser = await User.create(hashedUser);
 
-    res.status(201).json({ message: "User created Sucessfully!" }, createdUser);
+    res.status(201).json({ message: "User created Sucessfully!", user: createdUser });
   } catch (error) {
     res.status(500).json({ message: `${error}` });
   }
@@ -58,7 +59,7 @@ router.post("/login", async (req, res) => {
       return;
     }
 
-    const isPasswordValid = bcrypt.compare(password, foundUser.password);
+    const isPasswordValid = await bcrypt.compare(password, foundUser.password);
 
     if (isPasswordValid) {
       const data = {
@@ -78,6 +79,9 @@ router.post("/login", async (req, res) => {
         role: foundUser.role,
         resetPassword: foundUser.resetPassword,
       });
+    } else {
+      res.status(401).json({ message: "Invalid Credentials" });
+      return;
     }
   } catch (error) {
     console.log(error);
@@ -85,7 +89,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.patch("/resetpassword/:userId", async (req, res) => {
+router.patch("/resetpassword/:userId", isAuthenticated, async (req, res) => {
   const { newPassword } = req.body;
 
   const { userId } = req.params;

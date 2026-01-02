@@ -33,6 +33,11 @@ const userSchema = new Schema(
       type: Boolean,
       default: true,      
     },
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Client',
+      required: false
+    }
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

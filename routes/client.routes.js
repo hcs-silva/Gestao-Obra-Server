@@ -2,9 +2,9 @@ const router = require("express").Router();
 const Client = require("../models/Client.model");
 const User = require("../models/User.model");
 const bcrypt = require("bcrypt");
-
+const isAuthenticated = require("../middlewares/authMiddleware");
 //TODO: Implement the connection between the front and the backend. 
-router.post("/createClient", async (req, res) => {
+router.post("/createClient", isAuthenticated, async (req, res) => {
   try {
     const ClientName = req.body.ClientName?.trim();
     const AdminUsername = req.body.AdminUsername?.trim().toLowerCase();

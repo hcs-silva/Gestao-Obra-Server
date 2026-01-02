@@ -1,7 +1,7 @@
 // ℹ️ Gets access to environment variables/settings
 // https://www.npmjs.com/package/dotenv
 require("dotenv").config();
-const cors = require("cors");
+
 
 // ℹ️ Connects to the database
 require("./db");
@@ -15,11 +15,7 @@ const app = express();
 // ℹ️ This function is getting exported from the config folder. It runs most pieces of middleware
 require("./config")(app);
 
-app.use(
-  cors({
-    origin: "http://localhost:5173"  
-  })
-);
+
 
 // 👇 Start handling routes here
 const indexRoutes = require("./routes/index.routes");

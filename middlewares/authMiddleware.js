@@ -7,7 +7,7 @@ const isAuthenticated = (req, res, next) => {
 			req.headers.authorization.split(" ")[0] === "Bearer"
 		) {
 			const Token = req.headers.authorization.split(" ")[1];
-			const data = jwt.verify(Token, process.env.TOKEN_KEY);
+			const data = jwt.verify(Token, process.env.TOKEN_SECRET);
 			req.payload = data;
 			next();
 		} else {
