@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "outDir": "dist",
+    "rootDir": "./",
+    "noEmit": false
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.js"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "extends": "@tsconfig/node22/tsconfig.json"
+}

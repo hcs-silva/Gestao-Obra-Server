@@ -3,8 +3,9 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User.model");
 const isAuthenticated = require("../middlewares/authMiddleware");
+const requireRole = require("../middlewares/roleMiddleware");
 
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, async (req, res) => {
   try {
     const foundUsers = await User.find();
     if (foundUsers.length === 0) {
@@ -29,25 +30,37 @@ router.get("/", async (req, res) => {
 //   }
 // })
 
-router.post("/signup", async (req, res) => {
-  try {
-    const salt = bcrypt.genSaltSync(12);
-    const hashedPassword = bcrypt.hashSync(req.body.password, salt);
+// Signup route - only accessible to masterAdmin and Admin roles
+router.post(
+  "/signup",
+  isAuthenticated,
+  requireRole(["masterAdmin", "Admin"]),
+  async (req, res) => {
+    try {
+      const salt = bcrypt.genSaltSync(12);
+      const hashedPassword = bcrypt.hashSync(req.body.password, salt);
 
-    const hashedUser = {
-      username: req.body.username,
-      password: hashedPassword,
-      role: req.body.role,
-      resetPassword: req.body.resetPassword,
-    };
+      const hashedUser = {
+        username: req.body.username,
+        password: hashedPassword,
+        role: req.body.role || "user", // Default to 'user' if not specified, but admins can set it
+        resetPassword:
+          req.body.resetPassword !== undefined ? req.body.resetPassword : true,
+      };
 
-    const createdUser = await User.create(hashedUser);
+      const createdUser = await User.create(hashedUser);
 
-    res.status(201).json({ message: "User created Sucessfully!", user: createdUser });
-  } catch (error) {
-    res.status(500).json({ message: `${error}` });
+      res
+        .status(201)
+        .json({ message: "User created Sucessfully!", user: createdUser });
+    } catch (error) {
+      if (error.code === 11000) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      res.status(500).json({ message: `${error}` });
+    }
   }
-});
+);
 //TODO: finish the login workflow and role-based  authentication
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -65,6 +78,7 @@ router.post("/login", async (req, res) => {
       const data = {
         _id: foundUser._id,
         username: foundUser.username,
+        role: foundUser.role, // Include role in JWT token for authorization
       };
 
       const authToken = jwt.sign(data, process.env.TOKEN_SECRET, {
