@@ -1,27 +1,29 @@
-const jwt = require("jsonwebtoken");
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-const isAuthenticated = (req, res, next) => {
-	try {
-		if (
-			req.headers.authorization &&
-			req.headers.authorization.split(" ")[0] === "Bearer"
-		) {
-			const Token = req.headers.authorization.split(" ")[1];
-			const data = jwt.verify(Token, process.env.TOKEN_SECRET);
-			req.payload = data;
-			next();
-		} else {
-			return res.status(403).json({ message: "Incorrect Headers" });
-		}
-	} catch (error) {
-		console.error("Authentication Error:", error);
-		return res.status(403).json({
-			message:
-				error.name === "TokenExpiredError"
-					? "Token expired"
-					: "Authentication failed",
-		});
-	}
+const isAuthenticated = (req: any, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    res.status(401).json({ message: "Missing authorization header" });
+    return;
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.TOKEN_SECRET as string
+    ) as JwtPayload;
+
+    // Attach payload to request as `payload` so role middleware can read it
+    req.payload = payload;
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
 };
 
+export default isAuthenticated;
 module.exports = isAuthenticated;

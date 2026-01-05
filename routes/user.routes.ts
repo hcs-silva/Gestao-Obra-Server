@@ -1,9 +1,10 @@
-const router = require("express").Router();
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const User = require("../models/User.model");
-const isAuthenticated = require("../middlewares/authMiddleware");
-const requireRole = require("../middlewares/roleMiddleware");
+import { Router } from "express";
+const router = Router();
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import User from "../models/User.model";
+import isAuthenticated from "../middlewares/authMiddleware";
+import { requireRole } from "../middlewares/roleMiddleware";
 
 router.get("/", isAuthenticated, async (req, res) => {
   try {
@@ -13,7 +14,7 @@ router.get("/", isAuthenticated, async (req, res) => {
     } else {
       res.status(200).json(foundUsers);
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: `${error}` });
   }
 });
@@ -53,8 +54,8 @@ router.post(
       res
         .status(201)
         .json({ message: "User created Sucessfully!", user: createdUser });
-    } catch (error) {
-      if (error.code === 11000) {
+    } catch (error: any) {
+      if (error?.code === 11000) {
         return res.status(409).json({ message: "Username already exists" });
       }
       res.status(500).json({ message: `${error}` });
@@ -81,7 +82,7 @@ router.post("/login", async (req, res) => {
         role: foundUser.role, // Include role in JWT token for authorization
       };
 
-      const authToken = jwt.sign(data, process.env.TOKEN_SECRET, {
+      const authToken = jwt.sign(data, process.env.TOKEN_SECRET as string, {
         algorithm: "HS256",
         expiresIn: "10d",
       });
@@ -97,7 +98,7 @@ router.post("/login", async (req, res) => {
       res.status(401).json({ message: "Invalid Credentials" });
       return;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
     res.status(500).json({ message: `Invalid Credentials`, error: `${error}` });
   }
@@ -124,9 +125,9 @@ router.patch("/resetpassword/:userId", isAuthenticated, async (req, res) => {
     );
 
     res.status(200).json({ message: "Password Upated Sucessfuly!" });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: "No user found" });
   }
 });
 
-module.exports = router;
+export default router;

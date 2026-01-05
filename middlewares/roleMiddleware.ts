@@ -1,12 +1,11 @@
+import { Request, Response, NextFunction } from "express";
+
 /**
  * Role-based authorization middleware
  * Checks if the authenticated user has one of the required roles
- *
- - Array of roles that are allowed to access the route
- 
  */
-const requireRole = (allowedRoles) => {
-  return (req, res, next) => {
+export const requireRole = (allowedRoles: string[]) => {
+  return (req: any, res: Response, next: NextFunction) => {
     try {
       // Check if user is authenticated (req.payload should be set by isAuthenticated middleware)
       if (!req.payload) {
@@ -34,4 +33,4 @@ const requireRole = (allowedRoles) => {
   };
 };
 
-module.exports = requireRole;
+export default requireRole;
