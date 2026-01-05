@@ -1,14 +1,16 @@
 import { Schema, model } from "mongoose";
+import { profile } from "node:console";
 
 const clientSchema = new Schema({
-  ClientName: {
+  clientName: {
     type: String,
     required: true,
     trim: true,
     lowercase: true,
     unique: true,
   },
-  ClientAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  clientLogo: { type: String },
+  clientAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
   Members: [{ type: Schema.Types.ObjectId, ref: "User" }],
 });
 

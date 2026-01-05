@@ -11,27 +11,30 @@ router.post(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
-      const ClientName = (req.body.ClientName as string)?.trim();
-      const AdminUsername = (req.body.AdminUsername as string)
+      const clientName = (req.body.clientName as string)?.trim();
+      const adminUsername = (req.body.adminUsername as string)
         ?.trim()
         .toLowerCase();
-      const AdminPassword = req.body.AdminPassword as string;
+      const adminPassword = req.body.adminPassword as string;
+      const clientLogo = req.body.clientLogo as string;
 
-      if (!ClientName || !AdminUsername || !AdminPassword) {
+      if (!clientName || !adminUsername || !adminPassword) {
         return res.status(400).json({ message: "All Fields are Required." });
       }
-      const hashedPassword = await bcrypt.hash(req.body.AdminPassword, 12);
+      const hashedPassword = await bcrypt.hash(req.body.adminPassword, 12);
 
       const adminUser = await User.create({
-        username: AdminUsername,
+        username: adminUsername,
         password: hashedPassword,
+
         role: "Admin",
         resetPassword: true,
       });
 
       const newClient = await Client.create({
-        ClientName: ClientName,
-        ClientAdmin: adminUser._id,
+        clientName: clientName,
+        clientAdmin: adminUser._id,
+        clientLogo: clientLogo,
       });
 
       await User.updateOne(
