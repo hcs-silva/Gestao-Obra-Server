@@ -130,4 +130,31 @@ router.patch("/resetpassword/:userId", isAuthenticated, async (req, res) => {
   }
 });
 
+//TESTING PURPOSES ONLY - DELETE LATER
+router.post("/test-signup", async (req, res) => {
+  try {
+    const salt = bcrypt.genSaltSync(12);
+    const hashedPassword = bcrypt.hashSync(req.body.password, salt);
+
+    const hashedUser = {
+      username: req.body.username,
+      password: hashedPassword,
+      role: req.body.role || "user", // Default to 'user' if not specified, but admins can set it
+      resetPassword:
+        req.body.resetPassword !== undefined ? req.body.resetPassword : true,
+    };
+
+    const createdUser = await User.create(hashedUser);
+
+    res
+      .status(201)
+      .json({ message: "User created Sucessfully!", user: createdUser });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ message: "Username already exists" });
+    }
+    res.status(500).json({ message: `${error}` });
+  }
+});
+
 export default router;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/gestao-obra";
+const MONGO_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/gestao-obra-server";
 
 mongoose
   .connect(MONGO_URI)
