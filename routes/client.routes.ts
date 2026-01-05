@@ -12,9 +12,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const clientName = (req.body.clientName as string)?.trim();
-      const adminUsername = (req.body.adminUsername as string)
-        ?.trim()
-        .toLowerCase();
+      const adminUsername = (req.body.adminUsername as string)?.trim();
       const adminPassword = req.body.adminPassword as string;
       const clientLogo = req.body.clientLogo as string;
 
