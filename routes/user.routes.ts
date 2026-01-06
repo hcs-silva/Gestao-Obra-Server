@@ -93,6 +93,7 @@ router.post("/login", async (req, res) => {
         userId: foundUser._id,
         role: foundUser.role,
         resetPassword: foundUser.resetPassword,
+        clientId: foundUser.clientId,
       });
     } else {
       res.status(401).json({ message: "Invalid Credentials" });

@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import isAuthenticated from "../middlewares/authMiddleware";
 
 const router = Router();
-//TODO: Implement the connection between the front and the backend.
+
 router.post(
   "/createClient",
   isAuthenticated,
@@ -53,5 +53,19 @@ router.post(
     }
   }
 );
+
+router.get("/:clientId", async (req: Request, res: Response) => {
+  try {
+    const clientId = req.params.clientId;
+    const client = await Client.findById(clientId);
+    if (!client) {
+      return res.status(404).json({ message: "Client not found." });
+    }
+    console.log(client);
+    res.status(200).json(client);
+  } catch (error: any) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 export default router;
