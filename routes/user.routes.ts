@@ -6,14 +6,32 @@ import User from "../models/User.model";
 import isAuthenticated from "../middlewares/authMiddleware";
 import { requireRole } from "../middlewares/roleMiddleware";
 
-router.get("/", isAuthenticated, async (req, res) => {
+router.get("/", isAuthenticated, async (req: any, res) => {
   try {
-    const foundUsers = await User.find();
-    if (foundUsers.length === 0) {
-      res.status(404).json({ message: `No users found!` });
-    } else {
-      res.status(200).json(foundUsers);
+    // If requester is masterAdmin return all users
+    if (req.payload?.role === "masterAdmin") {
+      const foundUsers = await User.find();
+      if (foundUsers.length === 0) {
+        return res.status(404).json({ message: `No users found!` });
+      }
+      return res.status(200).json(foundUsers);
     }
+
+    // Otherwise only return users belonging to the same clientId
+    const clientId = req.payload?.clientId;
+    if (!clientId) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. No client association." });
+    }
+
+    const foundUsers = await User.find({ clientId: clientId });
+    if (foundUsers.length === 0) {
+      return res
+        .status(404)
+        .json({ message: `No users found for this client!` });
+    }
+    return res.status(200).json(foundUsers);
   } catch (error: any) {
     res.status(500).json({ message: `${error}` });
   }
@@ -80,6 +98,7 @@ router.post("/login", async (req, res) => {
         _id: foundUser._id,
         username: foundUser.username,
         role: foundUser.role, // Include role in JWT token for authorization
+        clientId: foundUser.clientId, // Include client association in token
       };
 
       const authToken = jwt.sign(data, process.env.TOKEN_SECRET as string, {

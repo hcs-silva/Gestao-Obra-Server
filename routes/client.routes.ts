@@ -6,6 +6,16 @@ import isAuthenticated from "../middlewares/authMiddleware";
 
 const router = Router();
 
+router.get("/", isAuthenticated, async (req: any, res: Response) => {
+  const {clientId} = req.payload;
+  try {
+    const clients = await Client.find({clientId});
+    res.status(200).json(clients);
+  } catch (error: any) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.post(
   "/createClient",
   isAuthenticated,
@@ -24,7 +34,6 @@ router.post(
       const adminUser = await User.create({
         username: adminUsername,
         password: hashedPassword,
-
         role: "Admin",
         resetPassword: true,
       });
@@ -47,16 +56,32 @@ router.post(
       });
     } catch (error: any) {
       if (error?.code === 11000) {
-        return res.status(409).json({ message: "Duplicate resource" });
+        return res
+          .status(409)
+          .json({
+            message: "Duplicate resource",
+            field: Object.keys(error.keyValue)[0],
+          });
       }
       return res.status(500).json({ message: "Internal server error" });
     }
   }
 );
 
-router.get("/:clientId", async (req: Request, res: Response) => {
+router.get("/:clientId", isAuthenticated, async (req: any, res: Response) => {
   try {
     const clientId = req.params.clientId;
+
+    // Non-masterAdmin users can only access their own client
+    if (req.payload?.role !== "masterAdmin") {
+      const tokenClientId = String(req.payload?.clientId || "");
+      if (!tokenClientId || tokenClientId !== String(clientId)) {
+        return res.status(403).json({
+          message: "Access denied. Insufficient permissions for this client.",
+        });
+      }
+    }
+
     const client = await Client.findById(clientId);
     if (!client) {
       return res.status(404).json({ message: "Client not found." });
