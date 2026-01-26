@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { profile } from "node:console";
+
 
 const clientSchema = new Schema({
   clientName: {
@@ -9,6 +9,8 @@ const clientSchema = new Schema({
     lowercase: true,
     unique: true,
   },
+  clientEmail: { type: String, trim: true, lowercase: true, unique: true },
+  clientPhone: { type: String, trim: true, unique: true },
   clientLogo: { type: String },
   clientAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
   Members: [{ type: Schema.Types.ObjectId, ref: "User" }],

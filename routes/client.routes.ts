@@ -7,9 +7,9 @@ import isAuthenticated from "../middlewares/authMiddleware";
 const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res: Response) => {
-  const {clientId} = req.payload;
+  
   try {
-    const clients = await Client.find({clientId});
+    const clients = await Client.find();
     res.status(200).json(clients);
   } catch (error: any) {
     return res.status(500).json({ message: "Internal server error" });
