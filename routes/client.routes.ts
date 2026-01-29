@@ -93,4 +93,67 @@ router.get("/:clientId", isAuthenticated, async (req: any, res: Response) => {
   }
 });
 
+router.patch(
+  "/:clientId",
+  isAuthenticated,
+  async (req: any, res: Response) => {
+    try {
+      const clientId = req.params.clientId;
+      const updateData = req.body;
+
+      // Non-masterAdmin users can only update their own client
+      if (req.payload?.role !== "masterAdmin") {
+        const tokenClientId = String(req.payload?.clientId || "");
+        if (!tokenClientId || tokenClientId !== String(clientId)) {
+          return res.status(403).json({
+            message: "Access denied. Insufficient permissions for this client.",
+          });
+        }
+      }
+
+      const updatedClient = await Client.findByIdAndUpdate(
+        clientId,
+        updateData,
+        { new: true }
+      );
+
+      if (!updatedClient) {
+        return res.status(404).json({ message: "Client not found." });
+      }
+
+      res.status(200).json(updatedClient);
+    } catch (error: any) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+router.delete(
+  "/:clientId",
+  isAuthenticated,
+  async (req: any, res: Response) => {
+    try {
+      const clientId = req.params.clientId;
+
+      
+      if (req.payload?.role !== "masterAdmin") {
+        
+          return res.status(403).json({
+            message: "Access denied. Insufficient permissions for this client.",
+          });
+        
+      }
+
+      const deletedClient = await Client.findByIdAndDelete(clientId);
+      if (!deletedClient) {
+        return res.status(404).json({ message: "Client not found." });
+      }
+
+      res.status(200).json({ message: "Client deleted successfully." });
+    } catch (error: any) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
 export default router;

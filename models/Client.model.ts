@@ -13,6 +13,7 @@ const clientSchema = new Schema({
   clientPhone: { type: String, trim: true, unique: true },
   clientLogo: { type: String },
   clientAdmin: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  subStatus: { type: Boolean, default: false },
   Members: [{ type: Schema.Types.ObjectId, ref: "User" }],
 });
 
