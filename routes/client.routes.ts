@@ -16,6 +16,21 @@ router.get("/", isAuthenticated, async (req: any, res: Response) => {
   }
 });
 
+
+//TODO: Add role-based access control to ensure only masterAdmin can access all clients and Admin can only access their own client.
+//TODO: Add pagination and filtering options for listing clients.
+//TODO: Implement more robust error handling and validation for client creation and updates.
+//TODO: Consider adding endpoints for managing client members (adding/removing users from a client).
+
+//TODO: Add endpoint for client admin to update their own client details (e.g., name, logo) without needing masterAdmin privileges. 
+
+//TODO: Implement endpoint for client admin to manage their own client members (e.g., add/remove users from their client) without needing masterAdmin privileges.
+
+//TODO: Add endpoint for client admin to view their own client details and members without needing masterAdmin privileges.
+//TODO: Create a separate router for client member management if the logic becomes complex (e.g., adding/removing users from a client, listing client members, etc.) to keep the code organized.
+//TODO: update teh logic to handle orphaned admins on client creation failure and client deletion (e.g., if client creation fails after admin user is created, delete the admin user to avoid orphaned users without a client association. Similarly, when deleting a client, consider how to handle the associated admin user and other members - either delete them or set their clientId to null and require reassignment).
+
+
 router.post(
   "/createClient",
   isAuthenticated,
