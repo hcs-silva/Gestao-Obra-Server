@@ -86,6 +86,7 @@ router.post(
         await User.findByIdAndDelete(adminUser._id);
       }
       if (error?.code === 11000) {
+        console.log("Duplicate key error:", error.keyValue);
         return res.status(409).json({
           message: "Duplicate resource",
           field: Object.keys(error.keyValue)[0],
