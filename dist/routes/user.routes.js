@@ -12,13 +12,28 @@ const authMiddleware_1 = __importDefault(require("../middlewares/authMiddleware"
 const roleMiddleware_1 = require("../middlewares/roleMiddleware");
 router.get("/", authMiddleware_1.default, async (req, res) => {
     try {
-        const foundUsers = await User_model_1.default.find();
+        // If requester is masterAdmin return all users
+        if (req.payload?.role === "masterAdmin") {
+            const foundUsers = await User_model_1.default.find();
+            if (foundUsers.length === 0) {
+                return res.status(404).json({ message: `No users found!` });
+            }
+            return res.status(200).json(foundUsers);
+        }
+        // Otherwise only return users belonging to the same clientId
+        const clientId = req.payload?.clientId;
+        if (!clientId) {
+            return res
+                .status(403)
+                .json({ message: "Access denied. No client association." });
+        }
+        const foundUsers = await User_model_1.default.find({ clientId: clientId });
         if (foundUsers.length === 0) {
-            res.status(404).json({ message: `No users found!` });
+            return res
+                .status(404)
+                .json({ message: `No users found for this client!` });
         }
-        else {
-            res.status(200).json(foundUsers);
-        }
+        return res.status(200).json(foundUsers);
     }
     catch (error) {
         res.status(500).json({ message: `${error}` });
@@ -72,6 +87,7 @@ router.post("/login", async (req, res) => {
                 _id: foundUser._id,
                 username: foundUser.username,
                 role: foundUser.role, // Include role in JWT token for authorization
+                clientId: foundUser.clientId, // Include client association in token
             };
             const authToken = jsonwebtoken_1.default.sign(data, process.env.TOKEN_SECRET, {
                 algorithm: "HS256",
@@ -83,6 +99,7 @@ router.post("/login", async (req, res) => {
                 userId: foundUser._id,
                 role: foundUser.role,
                 resetPassword: foundUser.resetPassword,
+                clientId: foundUser.clientId,
             });
         }
         else {
@@ -110,6 +127,29 @@ router.patch("/resetpassword/:userId", authMiddleware_1.default, async (req, res
     }
     catch (error) {
         res.status(500).json({ message: "No user found" });
+    }
+});
+//TESTING PURPOSES ONLY - DELETE LATER
+router.post("/test-signup", async (req, res) => {
+    try {
+        const salt = bcrypt_1.default.genSaltSync(12);
+        const hashedPassword = bcrypt_1.default.hashSync(req.body.password, salt);
+        const hashedUser = {
+            username: req.body.username,
+            password: hashedPassword,
+            role: req.body.role || "user", // Default to 'user' if not specified, but admins can set it
+            resetPassword: req.body.resetPassword !== undefined ? req.body.resetPassword : true,
+        };
+        const createdUser = await User_model_1.default.create(hashedUser);
+        res
+            .status(201)
+            .json({ message: "User created Sucessfully!", user: createdUser });
+    }
+    catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ message: "Username already exists" });
+        }
+        res.status(500).json({ message: `${error}` });
     }
 });
 exports.default = router;
