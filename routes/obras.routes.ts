@@ -93,9 +93,7 @@ router.get("/:obraId", isAuthenticated, async (req: any, res: Response) => {
   try {
     const obraId = req.params.obraId;
 
-    const obra = await Obra.findById(obraId)
-      .populate("clientId", "clientName")
-      .populate("responsibleUsers", "username");
+    const obra = await Obra.findById(obraId);
 
     if (!obra) {
       return res.status(404).json({ message: "Obra not found." });
@@ -111,6 +109,10 @@ router.get("/:obraId", isAuthenticated, async (req: any, res: Response) => {
         });
       }
     }
+
+    // Populate after permission check
+    await obra.populate("clientId", "clientName");
+    await obra.populate("responsibleUsers", "username");
 
     res.status(200).json(obra);
   } catch (error: any) {
@@ -151,9 +153,11 @@ router.patch(
 
       const updatedObra = await Obra.findByIdAndUpdate(obraId, updateData, {
         new: true,
-      })
-        .populate("clientId", "clientName")
-        .populate("responsibleUsers", "username");
+      });
+
+      // Populate after update
+      await updatedObra?.populate("clientId", "clientName");
+      await updatedObra?.populate("responsibleUsers", "username");
 
       res.status(200).json(updatedObra);
     } catch (error: any) {
