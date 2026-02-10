@@ -7,7 +7,6 @@ import isAuthenticated from "../middlewares/authMiddleware";
 const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res: Response) => {
-  
   try {
     const clients = await Client.find();
     res.status(200).json(clients);
@@ -16,13 +15,12 @@ router.get("/", isAuthenticated, async (req: any, res: Response) => {
   }
 });
 
-
 //TODO: Add role-based access control to ensure only masterAdmin can access all clients and Admin can only access their own client.
 //TODO: Add pagination and filtering options for listing clients.
 //TODO: Implement more robust error handling and validation for client creation and updates.
 //TODO: Consider adding endpoints for managing client members (adding/removing users from a client).
 
-//TODO: Add endpoint for client admin to update their own client details (e.g., name, logo) without needing masterAdmin privileges. 
+//TODO: Add endpoint for client admin to update their own client details (e.g., name, logo) without needing masterAdmin privileges.
 
 //TODO: Implement endpoint for client admin to manage their own client members (e.g., add/remove users from their client) without needing masterAdmin privileges.
 
@@ -30,11 +28,12 @@ router.get("/", isAuthenticated, async (req: any, res: Response) => {
 //TODO: Create a separate router for client member management if the logic becomes complex (e.g., adding/removing users from a client, listing client members, etc.) to keep the code organized.
 //TODO: update teh logic to handle orphaned admins on client creation failure and client deletion (e.g., if client creation fails after admin user is created, delete the admin user to avoid orphaned users without a client association. Similarly, when deleting a client, consider how to handle the associated admin user and other members - either delete them or set their clientId to null and require reassignment).
 
-
 router.post(
   "/createClient",
   isAuthenticated,
   async (req: Request, res: Response) => {
+    let adminUser: any;
+    let newClient: any;
     try {
       const clientName = (req.body.clientName as string)?.trim();
       const adminUsername = (req.body.adminUsername as string)?.trim();
@@ -46,23 +45,36 @@ router.post(
       }
       const hashedPassword = await bcrypt.hash(req.body.adminPassword, 12);
 
-      const adminUser = await User.create({
+      adminUser = await User.create({
         username: adminUsername,
         password: hashedPassword,
         role: "Admin",
         resetPassword: true,
       });
 
-      const newClient = await Client.create({
-        clientName: clientName,
-        clientAdmin: adminUser._id,
-        clientLogo: clientLogo,
-      });
+      try {
+        newClient = await Client.create({
+          clientName: clientName,
+          clientAdmin: adminUser._id,
+          clientLogo: clientLogo,
+        });
+      } catch (clientError: any) {
+        await User.findByIdAndDelete(adminUser._id);
+        throw clientError;
+      }
 
-      await User.updateOne(
-        { _id: adminUser._id },
-        { $set: { clientId: newClient._id } }
-      );
+      try {
+        await User.updateOne(
+          { _id: adminUser._id },
+          { $set: { clientId: newClient._id } },
+        );
+      } catch (updateError: any) {
+        await Client.findByIdAndDelete(newClient._id);
+        await User.findByIdAndDelete(adminUser._id);
+        return res
+          .status(500)
+          .json({ message: "Failed to link admin to client" });
+      }
 
       res.status(201).json({
         message: "Client and admin created sucessfully",
@@ -70,17 +82,18 @@ router.post(
         adminId: adminUser._id,
       });
     } catch (error: any) {
+      if (adminUser && !newClient) {
+        await User.findByIdAndDelete(adminUser._id);
+      }
       if (error?.code === 11000) {
-        return res
-          .status(409)
-          .json({
-            message: "Duplicate resource",
-            field: Object.keys(error.keyValue)[0],
-          });
+        return res.status(409).json({
+          message: "Duplicate resource",
+          field: Object.keys(error.keyValue)[0],
+        });
       }
       return res.status(500).json({ message: "Internal server error" });
     }
-  }
+  },
 );
 
 router.get("/:clientId", isAuthenticated, async (req: any, res: Response) => {
@@ -108,40 +121,34 @@ router.get("/:clientId", isAuthenticated, async (req: any, res: Response) => {
   }
 });
 
-router.patch(
-  "/:clientId",
-  isAuthenticated,
-  async (req: any, res: Response) => {
-    try {
-      const clientId = req.params.clientId;
-      const updateData = req.body;
+router.patch("/:clientId", isAuthenticated, async (req: any, res: Response) => {
+  try {
+    const clientId = req.params.clientId;
+    const updateData = req.body;
 
-      // Non-masterAdmin users can only update their own client
-      if (req.payload?.role !== "masterAdmin") {
-        const tokenClientId = String(req.payload?.clientId || "");
-        if (!tokenClientId || tokenClientId !== String(clientId)) {
-          return res.status(403).json({
-            message: "Access denied. Insufficient permissions for this client.",
-          });
-        }
+    // Non-masterAdmin users can only update their own client
+    if (req.payload?.role !== "masterAdmin") {
+      const tokenClientId = String(req.payload?.clientId || "");
+      if (!tokenClientId || tokenClientId !== String(clientId)) {
+        return res.status(403).json({
+          message: "Access denied. Insufficient permissions for this client.",
+        });
       }
-
-      const updatedClient = await Client.findByIdAndUpdate(
-        clientId,
-        updateData,
-        { new: true }
-      );
-
-      if (!updatedClient) {
-        return res.status(404).json({ message: "Client not found." });
-      }
-
-      res.status(200).json(updatedClient);
-    } catch (error: any) {
-      return res.status(500).json({ message: "Internal server error" });
     }
+
+    const updatedClient = await Client.findByIdAndUpdate(clientId, updateData, {
+      new: true,
+    });
+
+    if (!updatedClient) {
+      return res.status(404).json({ message: "Client not found." });
+    }
+
+    res.status(200).json(updatedClient);
+  } catch (error: any) {
+    return res.status(500).json({ message: "Internal server error" });
   }
-);
+});
 
 router.delete(
   "/:clientId",
@@ -150,25 +157,29 @@ router.delete(
     try {
       const clientId = req.params.clientId;
 
-      
       if (req.payload?.role !== "masterAdmin") {
-        
-          return res.status(403).json({
-            message: "Access denied. Insufficient permissions for this client.",
-          });
-        
+        return res.status(403).json({
+          message: "Access denied. Insufficient permissions for this client.",
+        });
       }
 
-      const deletedClient = await Client.findByIdAndDelete(clientId);
-      if (!deletedClient) {
+      const existingClient = await Client.findById(clientId);
+      if (!existingClient) {
         return res.status(404).json({ message: "Client not found." });
       }
+
+      await User.updateMany(
+        { clientId: existingClient._id },
+        { $unset: { clientId: "" } },
+      );
+
+      await Client.findByIdAndDelete(existingClient._id);
 
       res.status(200).json({ message: "Client deleted successfully." });
     } catch (error: any) {
       return res.status(500).json({ message: "Internal server error" });
     }
-  }
+  },
 );
 
 export default router;
