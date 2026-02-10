@@ -8,7 +8,7 @@ const router = Router();
 
 router.get("/", isAuthenticated, async (req: any, res: Response) => {
   try {
-    const clients = await Client.find();
+    const clients = await Client.find().sort({ clientName: 1 }).lean();
     res.status(200).json(clients);
   } catch (error: any) {
     return res.status(500).json({ message: "Internal server error" });
@@ -16,7 +16,6 @@ router.get("/", isAuthenticated, async (req: any, res: Response) => {
 });
 
 //TODO: Add role-based access control to ensure only masterAdmin can access all clients and Admin can only access their own client.
-//TODO: Add pagination and filtering options for listing clients.
 //TODO: Implement more robust error handling and validation for client creation and updates.
 //TODO: Consider adding endpoints for managing client members (adding/removing users from a client).
 
@@ -26,7 +25,6 @@ router.get("/", isAuthenticated, async (req: any, res: Response) => {
 
 //TODO: Add endpoint for client admin to view their own client details and members without needing masterAdmin privileges.
 //TODO: Create a separate router for client member management if the logic becomes complex (e.g., adding/removing users from a client, listing client members, etc.) to keep the code organized.
-//TODO: update teh logic to handle orphaned admins on client creation failure and client deletion (e.g., if client creation fails after admin user is created, delete the admin user to avoid orphaned users without a client association. Similarly, when deleting a client, consider how to handle the associated admin user and other members - either delete them or set their clientId to null and require reassignment).
 
 router.post(
   "/createClient",
@@ -86,7 +84,7 @@ router.post(
         await User.findByIdAndDelete(adminUser._id);
       }
       if (error?.code === 11000) {
-        console.log("Duplicate key error:", error.keyValue);
+        //console.log("Duplicate key error:", error.keyValue);
         return res.status(409).json({
           message: "Duplicate resource",
           field: Object.keys(error.keyValue)[0],
